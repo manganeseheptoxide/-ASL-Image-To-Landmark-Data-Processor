@@ -23,7 +23,7 @@ def detect():
     global _landmarks_list, _landmark_connections, _status, _sample
     image_folder = f'raw_data\{_sample}-samples'
     cap = ImageFeed(image_folder = image_folder, loop = False)
-    with mp_hands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5) as hands:
+    with mp_hands.Hands(min_detection_confidence=0.8, min_tracking_confidence=0.5) as hands:
         while True:
     
             ret, frame = cap.read()
@@ -64,7 +64,7 @@ for letter in range(ord('A'), ord('Z') + 1):
   detect()
 
   print('Please Wait')
-  time.sleep(1)
+  time.sleep(0.5)
 
   df = df_entry_from_queue_NLL(df = _centered_landmark_df, data_cache = _data_cache)
   file_name = f"processed_data\{_sample}_data.csv"
