@@ -19,6 +19,7 @@ def detect():
     global _landmarks_list, _landmark_connections, _status, _sample
     image_folder = f"raw_data\\{_sample}-samples" #The directory where the images are stored
     cap = ImageFeed(image_folder = image_folder, loop = False)
+    # cap = cv2.VideoCapture(0)
     with mp_hands.Hands(min_detection_confidence=0.8, min_tracking_confidence=0.5) as hands:
         while True:
     
@@ -40,8 +41,8 @@ def detect():
                 
                 # Draw the bounding box
                 cv2.rectangle(image, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
-                landmark_list = center_xyzlandmarks(_landmarks_list)
-                _data_cache.put(landmark_list)
+                # landmark_list = center_xyzlandmarks(_landmarks_list)
+                _data_cache.put(_landmarks_list)
             
             cv2.imshow('Hand Tracking', image)
 
@@ -52,9 +53,12 @@ def detect():
     cap.release()
     cv2.destroyAllWindows()
 
+# _landmarks_list, _landmark_connections, _centered_landmark_df = None, None, create_xyz_landmark_df()
+# _status, _data_cache = True, queue.Queue()
+# detect()
 
 for letter in range(ord('A'), ord('Z') + 1):
-  _landmarks_list, _landmark_connections, _centered_landmark_df = None, None, create_xyz_landmark_df()
+  _landmarks_list, _landmark_connections = None, None
   _status, _data_cache = True, queue.Queue()
   _sample = chr(letter)
   detect()
@@ -62,7 +66,7 @@ for letter in range(ord('A'), ord('Z') + 1):
   print('Please Wait')
   time.sleep(0.5)
 
-  df = df_entry_from_queue_NLL(df = _centered_landmark_df, data_cache = _data_cache)
+  df = df_entry_from_queue_NLL(df = create_xyz_landmark_df(), data_cache = _data_cache, centered=True, normalize=True)
   file_name = f"processed_data_mp01021\\{_sample}_data.csv"
   create_csv(df = df, file_name=file_name)
 

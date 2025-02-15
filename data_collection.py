@@ -45,29 +45,14 @@ def add_df_entry(df: pd.DataFrame = pd.DataFrame(), entry: list = []):
 
     return df
 
-def df_entry_from_queue_List(df: pd.DataFrame = pd.DataFrame(),
-                             data_cache = queue.Queue(),
-                             status: bool = True,
-                             centered: bool = False):
-    
-    while not data_cache.empty():
-        data = data_cache.get()
-        if centered:
-            data = center_xyzcoord(data)
-        df = add_df_entry(df = df, entry = data)
-        if status:
-            print('Data added')
-    if status:
-        print('No queued landmark data')
-    return df
-
 def df_entry_from_queue_NLL(df: pd.DataFrame = pd.DataFrame(),
                             data_cache = queue.Queue(),
                             status: bool = True,
-                            centered: bool = False):
+                            centered: bool = False,
+                            normalize: bool = False):
     
     while not data_cache.empty():
-        data = landmarklist_to_xyzcoord(data_cache.get(), all_52=False, centered = centered)
+        data = landmarklist_to_xyzcoord(data_cache.get(), all_52=False, centered = centered, normalize = normalize)
         df = add_df_entry(df = df, entry = data)
         # print(data)
         if status:

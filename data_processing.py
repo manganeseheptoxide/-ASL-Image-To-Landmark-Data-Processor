@@ -56,7 +56,7 @@ def connections(num_hands: int = 0, classification: list = [], pose: bool = Fals
 
     return out
 
-def detect_upperbody(frame, hands, only_52: bool = False, centered: bool = False, hand_priority: str = 'left'):
+def detect_upperbody(frame, hands, only_52: bool = False, hand_priority: str = 'left'):
 
     # Check if the frame is empty
     if frame is None or frame.size == 0:
@@ -97,41 +97,6 @@ def detect_upperbody(frame, hands, only_52: bool = False, centered: bool = False
                         break
                 if not container:
                     container = list(hands_results.multi_hand_landmarks[0].landmark)
-    
-    # if pose_results.pose_landmarks:
-    #     for index in useful_pose_landmarks_index:
-    #         container.append(pose_results.pose_landmarks.landmark[index])
-
-        #### center landmark coords
-        # this will be a reference point when processing the data for model training and visualization
-        # wrist = 
-        # x = (pose_results.pose_landmarks.landmark[11].x + pose_results.pose_landmarks.landmark[12].x)/2
-        # y = (pose_results.pose_landmarks.landmark[11].y + pose_results.pose_landmarks.landmark[12].y)/2
-        # z = (pose_results.pose_landmarks.landmark[11].z + pose_results.pose_landmarks.landmark[12].z)/2
-        # visibility = (pose_results.pose_landmarks.landmark[11].visibility + pose_results.pose_landmarks.landmark[12].visibility)/2
-
-        # center_landmark = NormLandmark(x = x, y = y, z = z)
-        # container.append(center_landmark)
-
-        # when creating an instance of a NormalizedLandmarkList with center_landmark appended to the iterable, it gives the error below:
-        # TypeError: Parameter to MergeFrom() must be instance of same class: expected mediapipe.NormalizedLandmark got NormalizedLandmark.
-
-        # center_landmark = pose_results.pose_landmarks.landmark[15]
-        # center_landmark.x = x
-        # center_landmark.y = y
-        # center_landmark.z = z
-        # center_landmark.visibility = visibility
-
-        # container.append(center_landmark)
-
-        # this will be a workaround for now because of the error that i do not know how to fix,.
-    if centered and container:
-        # if not pose_results.pose_landmarks:
-        #     raise ValueError('Since there are no pose landmarks, there is no center point you fuckwit')
-        for landmark in container:
-            landmark.x -= container[-1].x
-            landmark.y -= container[-1].y
-            landmark.z -= container[-1].z
 
     if only_52 and container:
         useful_landmarks = NormLandmarkList(landmark = container) if len(container) == 52 else NormLandmarkList()
@@ -143,17 +108,10 @@ def detect_upperbody(frame, hands, only_52: bool = False, centered: bool = False
     # image, NormalizedLandmarkList, and list
     return image, useful_landmarks, connection_data
 
-def center_xyzcoord(coordinates: list = []):
-    if coordinates:
-        for i, coord in enumerate(coordinates):
-            coord[0] -= coordinates[-1][0]
-            coord[1] -= coordinates[-1][1]
-            coord[2] -= coordinates[-1][2]
-    # centers a list in a format of [[x1, y1, z1],...,[xn, yn, zn]] around the nth coordinate
-    return coordinates
-
-def landmarklist_to_xyzcoord(landmark_list, all_52 : bool = False, centered: bool = False):
+def landmarklist_to_xyzcoord(landmark_list, all_52 : bool = False, centered: bool = False, normalize: bool = False):
     # landmark_list must be a NormalizedLandmarkList Object
+    if centered:
+        landmark_list = center_xyzlandmarks(landmark_list, normalized=normalize)
     if landmark_list:
         if all_52:
             landmark_coordiantes = [[landmark.x, landmark.y, landmark.z] for landmark in landmark_list.landmark] if len(landmark_list.landmark) == 52 else []
@@ -162,17 +120,20 @@ def landmarklist_to_xyzcoord(landmark_list, all_52 : bool = False, centered: boo
     else:
         return []
     # converts a NormalizedLandmarkList with n NormalizedLandmarks into a list in the format of [[x1, y1, z1],...,[xn, yn, zn]] 
-    return landmark_coordiantes if not centered else center_xyzcoord(landmark_coordiantes)
-
-def center_xyzlandmarks(landmarks_list):
+    return landmark_coordiantes
+def center_xyzlandmarks(landmarks_list, normalized: bool = True):
     if landmarks_list and landmarks_list.landmark:
         x_center = landmarks_list.landmark[9].x
         y_center = landmarks_list.landmark[9].y
         z_center = landmarks_list.landmark[9].z
+        x_norm = (landmarks_list.landmark[0].x - x_center)
+        y_norm = (landmarks_list.landmark[0].y - y_center)
+        z_norm = (landmarks_list.landmark[0].z - z_center)
+        norm0 = (x_norm**2 + y_norm**2 + z_norm**2)**0.5
         for landmark in landmarks_list.landmark:
-            landmark.x -= x_center
-            landmark.y -= y_center
-            landmark.z -= z_center
+            landmark.x = (landmark.x - x_center)/norm0 if normalized else landmark.x - x_center
+            landmark.y = (landmark.y - y_center)/norm0 if normalized else landmark.y - y_center
+            landmark.z = (landmark.z - z_center)/norm0 if normalized else landmark.z - z_center
         
     return landmarks_list
 
