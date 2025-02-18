@@ -56,8 +56,7 @@ def connections(num_hands: int = 0, classification: list = [], pose: bool = Fals
 
     return out
 
-def detect_upperbody(frame, hands, only_52: bool = False, hand_priority: str = 'left'):
-
+def detect_upperbody(frame, hands, only_52: bool = False, hand_priority: str = 'right'):
     # Check if the frame is empty
     if frame is None or frame.size == 0:
         raise ValueError("Input frame is empty")
@@ -74,29 +73,36 @@ def detect_upperbody(frame, hands, only_52: bool = False, hand_priority: str = '
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     
     container = []
+    hand_used = None
 
     num_hands_detected = 0 if bool(hands_results.multi_hand_landmarks) == False else len(hands_results.multi_hand_landmarks)
     hand_classifications = [side.classification[0].label.lower() for side in hands_results.multi_handedness] if bool(hands_results.multi_handedness) else []
     # pose_detected = bool(pose_results.pose_landmarks)
-
+    hand_used = ''
     if hands_results.multi_hand_landmarks:
         if num_hands_detected == 1:
             container = list(hands_results.multi_hand_landmarks[0].landmark)
+            hand_used = hand_classifications[0]
+        
         else:
             if hand_priority == 'left':
                 for i, landmarks in enumerate(hands_results.multi_hand_landmarks):
                     if hand_classifications[i] == 'left':
                         container = list(landmarks.landmark)
+                        hand_used = 'left'
                         break
                 if not container:
                     container = list(hands_results.multi_hand_landmarks[0].landmark)
+                    hand_used = hand_classifications[0]
             else:
                 for i, landmarks in enumerate(hands_results.multi_hand_landmarks):
                     if hand_classifications[i] == 'right':
                         container = list(landmarks.landmark)
+                        hand_used = 'right'
                         break
                 if not container:
                     container = list(hands_results.multi_hand_landmarks[0].landmark)
+                    hand_used = hand_classifications[0]
 
     if only_52 and container:
         useful_landmarks = NormLandmarkList(landmark = container) if len(container) == 52 else NormLandmarkList()
@@ -105,8 +111,8 @@ def detect_upperbody(frame, hands, only_52: bool = False, hand_priority: str = '
 
     connection_data = connections(num_hands = 1, classification = hand_classifications, pose = False) if useful_landmarks.landmark else []
     
-    # image, NormalizedLandmarkList, and list
-    return image, useful_landmarks, connection_data
+    # image, NormalizedLandmarkList, list, and hand used
+    return image, useful_landmarks, connection_data, hand_used
 
 def landmarklist_to_xyzcoord(landmark_list, all_52 : bool = False, centered: bool = False, normalize: bool = False):
     # landmark_list must be a NormalizedLandmarkList Object
